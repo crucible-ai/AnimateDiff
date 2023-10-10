@@ -110,6 +110,10 @@ def load_weights(
         unet_state_dict.update({name: param for name, param in motion_module_state_dict.items() if "motion_modules." in name})
     
     missing, unexpected = animation_pipeline.unet.load_state_dict(unet_state_dict, strict=False)
+    if missing:
+        print(f"Motion model UNet is missing keys: {','.join(missing)}")
+    if unexpected:
+        print(f"Motion model UNet got some unexpected keys: {','.join(unexpected)}")
     assert len(unexpected) == 0
     del unet_state_dict
 

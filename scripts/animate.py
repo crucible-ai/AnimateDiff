@@ -45,10 +45,18 @@ def main(args):
             inference_config = OmegaConf.load(model_config.get("inference_config", args.inference_config))
 
             ### >>> create validation pipeline >>> ###
-            tokenizer    = CLIPTokenizer.from_pretrained(args.pretrained_model_path, subfolder="tokenizer")
-            text_encoder = CLIPTextModel.from_pretrained(args.pretrained_model_path, subfolder="text_encoder")
-            vae          = AutoencoderKL.from_pretrained(args.pretrained_model_path, subfolder="vae")            
-            unet         = UNet3DConditionModel.from_pretrained_2d(args.pretrained_model_path, subfolder="unet", unet_additional_kwargs=OmegaConf.to_container(inference_config.unet_additional_kwargs))
+            if args.pretrained_diffuser:
+                from diffusers import StableDiffusionPipeline
+                pipe = StableDiffusionPipeline.from_pretrained(args.pretrained_diffuser)
+                tokenizer = pipe.tokenizer
+                text_encoder = pipe.text_encoder
+                vae = pipe.vae
+                unet = pipe.unet
+            else:
+                tokenizer    = CLIPTokenizer.from_pretrained(args.pretrained_model_path, subfolder="tokenizer")
+                text_encoder = CLIPTextModel.from_pretrained(args.pretrained_model_path, subfolder="text_encoder")
+                vae          = AutoencoderKL.from_pretrained(args.pretrained_model_path, subfolder="vae")            
+                unet         = UNet3DConditionModel.from_pretrained_2d(args.pretrained_model_path, subfolder="unet", unet_additional_kwargs=OmegaConf.to_container(inference_config.unet_additional_kwargs))
 
             if is_xformers_available(): unet.enable_xformers_memory_efficient_attention()
             else: assert False
@@ -111,6 +119,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--pretrained_diffuser",  type=str, default=None)
     parser.add_argument("--pretrained_model_path", type=str, default="models/StableDiffusion/stable-diffusion-v1-5",)
     parser.add_argument("--inference_config",      type=str, default="configs/inference/inference-v1.yaml")    
     parser.add_argument("--config",                type=str, required=True)
